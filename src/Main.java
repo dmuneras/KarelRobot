@@ -15,13 +15,13 @@ public class Main {
 
       public static void main(String[] args) throws InterruptedException {
         World.readWorld("/Users/dmuneras/Downloads/KJRDistribution060110/mundo.kwld");
-        //World.reset();
+        World.showSpeedControl(true);
         World.setVisible(true);
         Karelito hw1 = new Karelito(4,1, Color.BLUE);
         Karelito hw2 = new Karelito(4,2, Color.BLACK);
-        Karelito hw3 = new Karelito(4,3, Color.MAGENTA);
+        Karelito hw3 = new Karelito(4,3, Color.WHITE);
         Karelito hw4 = new Karelito(4,4, Color.ORANGE);
-        Karelito hw5 = new Karelito(4,5, Color.PINK);
+        Karelito hw5 = new Karelito(4,5, Color.GREEN);
         Thread t1 = new Thread(hw1);
         t1.setDaemon(false);
         Thread t2 = new Thread(hw2);

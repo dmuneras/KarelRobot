@@ -9,7 +9,7 @@ import kareltherobot.*;
 class Karelito extends Robot implements Runnable
 {
 
-    public static final int SEARCHING = 1;
+    public static final int SEARCHING_WALL = 1;
     public static final int FETCHING = 2;
     public static final int RETURNING = 3;
     public static final int NORTH = 1;
@@ -19,25 +19,18 @@ class Karelito extends Robot implements Runnable
 
     private int x;
     private int y;
-    private int current_x;
-    private int current_y;
-    private Color color;
+    private int currentX;
+    private int currentY;
     private int state;
-    private int mermaid_x;
-    private int mermaid_y;
-    private int last_move;
-
 
     public Karelito(int x, int y, Color color){
-        super(x,y,North,10,color);
+        super(x,y,North,0,color);
         this.x = x;
         this.y = y;
-        this.current_x = x;
-        this.current_y = y;
-        state = SEARCHING;
+        this.currentX = x;
+        this.currentY = y;
+        state = SEARCHING_WALL;
     }
-
-
 
     public void turnN(int n){
         for(int i=0; i < n; i++){
@@ -45,27 +38,35 @@ class Karelito extends Robot implements Runnable
         }
     }
 
-    public void actCoord(){
-        if(facingNorth()){
-            current_x += 1;
-            
-        }else if(facingEast()){
-            current_y +=1;
-       
-        }else if(facingWest()){
-            current_y -= 1;
-        }else{
-            current_x -= 1;
-            
+    public void pickNBeepers(int n){
+        for(int i=0; i < n; i++){
+            pickBeeper();
         }
-        System.out.println("current_x:" + current_x + "current_y:" + current_y);
-
     }
 
-    public void moveNorth(){
-        while (!facingNorth()){
-            turnLeft();
+    public void putNBeepers(int n){
+        for(int i=0; i < n; i++){
+            putBeeper();
         }
+    }
+
+    public void actCoord(){
+        if (facingNorth()){
+            currentX += 1;
+        }else if (facingEast()){
+            currentY += 1;
+        }else if (facingWest()){
+            currentY -= 1;
+        }else if (facingSouth()){
+            currentX -= 1;
+        }
+    }
+
+    public boolean stickToTheWall(){
+        turnLeft();
+        boolean wall = !frontIsClear();
+        turnN(3);
+        return wall;
     }
 
     public void moveFront(){
@@ -73,51 +74,73 @@ class Karelito extends Robot implements Runnable
             move();
             actCoord();
         }
-
-
     }
+
     public void findMermaids(){
-        moveFront();
-        last_move = NORTH;
-        turnN(3);
-        if(frontIsClear()){
-            moveFront();
-            last_move = EAST;
-        }
-        turnN(2);
-        if(frontIsClear()){
-            moveFront();
-            last_move = WEST;
-        }
-        turnN(1);
-    }
-
-    public void findMaze(){
-        if(frontIsClear()){
-            move();
-            actCoord();
-            moveNorth();
-        } else {
-            turnN(3);
-            if(frontIsClear()){
+        boolean finished = false;
+        while(!finished){
+            if (nextToABeeper() && !anyBeepersInBeeperBag()){
+                pickNBeepers(10);
+            }
+            if (frontIsClear() && stickToTheWall()){
                 move();
                 actCoord();
-                moveNorth();
-            }else{
-
-                turnN(2);
-                if(frontIsClear()){
-                    move();
-                    actCoord();
-                    moveNorth();
-                } else{
-                    turnN(1);
-                    actCoord();
-                    moveNorth();
-                }
+            }
+            if (frontIsClear() && !stickToTheWall()){
+                turnN(1);
+                move();
+                actCoord();
+            }
+            if (!frontIsClear() && stickToTheWall()){
+                turnN(3);
+            }
+            if (!frontIsClear() && !stickToTheWall()){
+                turnN(1);
+                move();
+                actCoord();
+            }
+            if ((currentX == 1 && currentY == 1) && anyBeepersInBeeperBag()){
+                putNBeepers(10);
+                move();
+                actCoord();
+            }
+            if ((currentX == 1 && currentY == 1) && !anyBeepersInBeeperBag()){
+                finished = true;
             }
         }
+    }
 
+    public void goHome(){
+        while(currentX != x){
+            if (currentX < x){
+                while(!facingNorth()){
+                    turnLeft();
+                }
+                move();
+                actCoord();
+            }else{
+                while(!facingSouth()){
+                    turnLeft();
+                }
+                move();
+                actCoord();
+            }
+        }
+        while(currentY != y){
+            if (currentY < y){
+                while(!facingEast()){
+                    turnLeft();
+                }
+                move();
+                actCoord();
+            }else{
+                while(!facingWest()){
+                    turnLeft();
+                }
+                move();
+                actCoord();
+            }
+        }
     }
 
     @Override
@@ -125,29 +148,23 @@ class Karelito extends Robot implements Runnable
 
             while (true){
                 switch(state){
-                    case SEARCHING:
-                        //Hacer que vaya al punto de las sirenas
-                        findMaze();
-//                        if(this.nextToABeeper()){
-//                            this.pickBeeper();
-//                            state = FETCHING;
-//                        }else{
-//                            state = RETURNING;
-//                        }
+                    case SEARCHING_WALL:
+                        moveFront();
+                        turnN(3);
+                        state = FETCHING;
                         break;
                     case FETCHING:
-                        //Hacer que vaya al punto 0,0
-                        this.putBeeper();
-                        state = SEARCHING;
+                        findMermaids();
+                        state = RETURNING;
                         break;
                     case RETURNING:
-                        //Hacer que vaya al punto x,y
+                        goHome();
+                        while(!facingNorth()){
+                            turnLeft();
+                        }
                         this.turnOff();
                         break;
                 }
             }
     }
-
- 
-
 }
